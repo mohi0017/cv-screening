@@ -1,10 +1,1 @@
 .env
-*.pyc
-__pycache__/
-.vscode/
-.idea/
-build/
-dist/
-*.log
-*.tmp
-*.swp

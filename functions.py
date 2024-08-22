@@ -13,10 +13,15 @@ from werkzeug.exceptions import HTTPException
 import asyncio
 import json
 
+from dotenv import load_dotenv
+import os
 
-# Placeholder for API key
-api_key = "your-api-key-placeholder"
-client = openai.AsyncOpenAI(api_key=api_key)
+# Load environment variables from .env file
+load_dotenv()
+
+
+openai_key = os.getenv('OPENAI_KEY')
+client = openai.AsyncOpenAI(api_key=openai_key)
 
 
 def is_cv(text):

@@ -10,10 +10,20 @@ from flask_cors import CORS
 from send_email import *
 import time
 import json
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Access the variables
+credentials_path = os.getenv('CREDENTIALS_PATH')
+database_url = os.getenv('DATABASEURL')
+
 
 # Initialize Firebase Admin SDK with the placeholder file
-cred = credentials.Certificate("./cv_screening_credentials_placeholder.json")
-firebase_admin.initialize_app(cred, {"databaseURL": "https://your-database-url.firebaseio.com/"})
+cred = credentials.Certificate(credentials_path)
+firebase_admin.initialize_app(cred, {"databaseURL": database_url })
 
 app = Flask(__name__)
 CORS(app)

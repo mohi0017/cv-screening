@@ -7,8 +7,8 @@ from datetime import datetime
 
 
 # Define paths to your assets
-asset2 = "assets/company-logo.jpg"
-asset1 = "assets/signature_sol.jpg"
+asset1 = "static/assets/Solutyics-logo.png"
+# asset2 = "assets/signature_sol.jpg"
 
 def send_interview_invitation(
     dest_email, c_name, c_designation, sendermail, hr_name, hr_pos, server
@@ -94,14 +94,14 @@ def send_interview_invitation(
     html_part = MIMEText(html_content, "html")
     message.attach(html_part)
 
+    # with open(asset2, "rb") as f:
+    #     logo = MIMEImage(f.read())
+    #     logo.add_header("Content-ID", "<signature>")
+    #     message.attach(logo)
+
     with open(asset1, "rb") as f:
         logo = MIMEImage(f.read())
         logo.add_header("Content-ID", "<company_logo>")
         message.attach(logo)
-
-    with open(asset2, "rb") as f:
-        signature = MIMEImage(f.read())
-        signature.add_header("Content-ID", "<signature>")
-        message.attach(signature)
 
     return message

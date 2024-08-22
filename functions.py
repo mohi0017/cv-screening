@@ -22,12 +22,9 @@ def is_cv(text):
     # List of common CV keywords
     cv_keywords = ["education", "skills", "experience"]
 
-    # Check if 'education' is present and at least one of 'skills' or 'experience'
-    if cv_keywords[0] in text.lower() and (
-        cv_keywords[1] in text.lower() or cv_keywords[2] in text.lower()
-    ):
-        return True
-
+    for key in cv_keywords:
+        if key in text.lower():
+            return True
     return False
 
 
@@ -57,13 +54,12 @@ def check_pdf_for_cv(pdf_path):
         for page_num in range(len(pdf_reader.pages)):
             page = pdf_reader.pages[page_num]
             text += page.extract_text()
-            break
         if is_cv(text):
             print("The PDF file appears to be a CV.")
-            return text, True
+            return pdf_path, text, True
         else:
             print("The PDF file does not appear to be a CV.")
-            return pdf_path, False
+            return pdf_path, text, False
 
 
 def pre_process(path):
@@ -74,6 +70,7 @@ def pre_process(path):
     results = []
     for pdf_file in pdf_files:
         result = check_pdf_for_cv(pdf_file)
+        # print("pdf_path, text, True",result)
         results.append(result)
     end_time = time.time()
     execution_time = end_time - start_time
@@ -82,9 +79,9 @@ def pre_process(path):
 
 
 @backoff.on_exception(backoff.expo, openai.RateLimitError)
-async def JSON(user_input):
+async def JSON(file_path,user_input):
     details = """can you make it structured as a dictionary format like as following
-    {   'file_name' : 'details',
+    {   'file_path' : 'insert file path here with root directory',
         'name' : 'details',
         'profile' : 'details',
         'personal-details' : 'details',
@@ -97,13 +94,14 @@ async def JSON(user_input):
         'experience': 'details',
         'courses'  : 'details'
     } """
+    # print(file_path)
     response = await client.chat.completions.create(
         model="gpt-4o-mini",
         temperature=0.001,
         messages=[
             {
                 "role": "system",
-                "content": f"you are a helpful assistant, please provide a structured format of the following text {user_input} user provides you. In no way are you allowed to hallucinate or make up answers. {details}",
+                "content": f"you are a helpful assistant, please provide a structured format of the following text '{user_input}' user provides you and the file path is '{file_path}'. In no way are you allowed to hallucinate or make up answers. Details are :  '{details}' and return response without '```python', '```json' and any extra commentary",
             }
         ],
     )
@@ -115,69 +113,121 @@ async def JSON(user_input):
 @backoff.on_exception(backoff.expo, openai.RateLimitError)
 async def openAI(json_text, rules_text):
     out_put_formate = {
-        "data": [
-            {"file_name": "<find the file name from given data>"},
-            {"final_result": "<yes or no>"},
-            {"feed_back": "< provide a brief review , about the evaluation you did>"},
-            {"user_name": "<get it from given data>"},
-            {"email": "<get it from given data>"},
-            {"phone_number": "<get the phone number only from given data>"},
+        "data": 
             {
-                "score": "<on the basis of relevance with the description you have to score it>"
-            },
-        ]
+            "file_path": "<Find file path from given data>",
+            "final_result": "<yes or no>",
+            "feed_back": "< provide a brief review , about the evaluation you did>",
+            "user_name": "<get it from given data>",
+            "email": "<get it from given data>",
+            "phone_number": "<get the phone number only from given data>",
+            "score": "<on the basis of relevance with the description you have to score it>"
+            }
+        
     }
 
-    user_input = f"You are a helpful assistant that analyzes CVs for shortlisting. Please rank the relevance of the candidate's qualifications provided in {json_text} , to all the aspects of job requirements criteria provided in {rules_text}, on a scale of 1 to 10 (where 1 is minimum similarity , and 10 is maximum similarity), and for every aspect if you get value greater than 7, the selection should be made as positive but you can't be lenient. Provide your out_put in the same structure as provide here {out_put_formate} regarding the candidate's eligibility for shortlisting based on the analysis. always return the responce in the defined structure of {out_put_formate}, nothing else, please mention the location details in the feedback too, ass this check in also nesessory. 'remember that there is no way that the name and email is missing in the input data, if it is not mentioned return value as null', if the location of candidate is other then the defined location, there is a straight no. Always return the out_put as in double quotes json formate. "
-    response = await client.chat.completions.create(
-        model="gpt-4o-mini",
-        temperature=0.001,
-        messages=[
-            {"role": "system", "content": user_input},
-        ],
-    )
-    response_message = response.choices[0].message.content
-    response_message = response_message.replace("\n", "").replace("/", "")
-
-    # print("##############################################")
-    json_object = json.loads(response_message)
-
-    # print("##############################################")
-
-    return json_object
-
+    user_input = f"You are a helpful assistant that analyzes CVs for shortlisting. Please rank the relevance of the candidate's qualifications provided in {json_text} , to all the aspects of job requirements criteria provided in {rules_text}, on a scale of 1 to 10 (where 1 is minimum similarity , and 10 is maximum similarity), and for every aspect if you get value greater than 7, the selection should be made as positive but you can't be lenient. Provide your out_put in the same structure as provide here {out_put_formate} regarding the candidate's eligibility for shortlisting based on the analysis. always return the responce in the defined structure of {out_put_formate}, nothing else, please mention the location details in the feedback too, ass this check in also nesessory. 'remember that there is no way that the name and email is missing in the input data, if it is not mentioned return value as null', if the location of candidate is other then the defined location, there is a straight no. Always return the out_put as in double quotes json formate.Don't give '```json' in response simply give response without any commentary. "
+    try:
+            response = await client.chat.completions.create(
+                model="gpt-4o-mini",
+                temperature=0.001,
+                messages=[
+                    {"role": "system", "content": user_input},
+                ],
+            )
+            response_message = response.choices[0].message.content
+            # print("Response message from openAI:", response_message)
+            response_message = response_message.replace("\n", "").replace("/", "/")
+            json_object = json.loads(response_message)
+            # print(json_object)
+            return json_object
+    except Exception as e:
+            print(f"Error in openAI function: {e}")
+            return {}  # Return an empty dict or handle it as needed
 
 async def process_pdfs_in_loop(path, details):
     num_threads = os.cpu_count()
-    print("Number of threads:", num_threads)
+    # print("Number of threads:", num_threads)
     with ThreadPoolExecutor(max_workers=num_threads) as executor:
         future = executor.submit(pre_process, path)
 
     resultss = await asyncio.get_event_loop().run_in_executor(None, future.result)
     not_cv_list = []
-    print(resultss)
-    for file_path, is_cvv in resultss:
+    # print(resultss)
+    for file_path, _ , is_cvv in resultss:
         if not is_cvv:
             not_cv_list.append(file_path)
 
-    results = []
-    result1 = []
     print("pass 1")
 
-    tasks = [JSON(prompt) for prompt, is_cvv in resultss if is_cvv]
+    tasks = [JSON(file_name,prompt) for file_name, prompt, is_cvv in resultss if is_cvv]
     results = await asyncio.gather(*tasks)
-    print(results)
+    # print(results)
     print("pass 2")
 
-    task1 = [openAI(prompt1, details) for prompt1 in results]
+    async def openAI_wrapper(prompt1, details):
+        return await openAI(prompt1, details)  # Assuming openAI is async
+
+    task1 = [openAI_wrapper(prompt1, details) for prompt1 in results]
     print("#########################################################################")
     print("#########################################################################")
 
-    result1 = await asyncio.gather(*task1)
+    try:
+        candidates = await asyncio.gather(*task1)
+    except Exception as e:
+        print(f"Error while gathering tasks: {e}")
+        return [], not_cv_list
+
     print("#########################################################################")
     print("#########################################################################")
-    print(result1)
+    # print("type(candidates)",candidates[0]['data']['phone_number'])
 
     print("pass 3")
 
-    return result1, not_cv_list
+    return candidates, not_cv_list
+
+
+# details = """
+# We are looking for a Junior AI Developer with a keen interest in artificial intelligence. This role is ideal for those eager to contribute in small AI projects and increase their Python development skills in a dynamic and innovative environment.
+
+
+# Key Responsibilities:
+
+# Develop and maintain Python code.
+# Utilise Object-Oriented Programming principles to create efficient and scalable solutions.
+# Design algorithms and build logical solutions to complex problems.
+# Apply basic AI/ML concepts to real-world projects and scenarios.
+# Work with OpenAI and Langchain APIs to integrate advanced AI functionalities into projects.
+# Operate within various frameworks like FastAPI, Flask, or Django, according to project requirements.
+
+
+# Must-Have Skills:
+
+# Strong proficiency in Python programming and data manipulation.
+# Solid understanding of Object-Oriented Programming (OOP).
+# Capable of designing algorithms and building logical solutions.
+# Fundamental knowledge of AI/ML concepts.
+# Basic knowledge of NLP.
+
+
+# Preferred Skills:
+
+# A Strong grasp of NLP
+# Experience or exposure to chatbot development, including understanding Langchain routers, RAGs (Retrieval-Augmented Generation), and other related technologies.
+# Knowledge or interest in developing and fine-tuning models for NLP (Natural Language Processing) and image processing tasks.
+# Familiarity with image generation APIs such as Stability AI, Imagine.ai, DALL-E.
+# Eagerness to delve into deep learning and model creation.
+
+# Qualifications:
+
+# Pursuing or recently completed a degree in Computer Science, Engineering, or a related field.
+# Demonstrated passion and interest in Python programming and AI.
+# Enthusiasm for learning and staying updated with the latest trends in AI and ML.
+# """
+
+# async def main():
+#     await process_pdfs_in_loop("cv_folder", details)
+
+# # To run the main function in an asyncio event loop
+# if __name__ == "__main__":
+#     asyncio.run(main())

@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}HR Dashboard{% endblock %}
+
+{% block content %}
+    <h1 class="mt-4">HR Dashboard</h1>
+    
+    <!-- HR Contact Information Form -->
+    <div class="mt-4">
+        <h3>HR Contact Information</h3>
+        <form id="hrInfoForm">
+            <div class="form-group">
+                <label for="hrName">HR Name</label>
+                <input type="text" id="hrName" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="hrDesignation">HR Designation</label>
+                <input type="text" id="hrDesignation" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="hrEmail">HR Email</label>
+                <input type="email" id="hrEmail" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="hrPassword">HR Email Password</label>
+                <input type="password" id="hrPassword" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="candidatePosition">Position</label>
+                <input type="text" id="candidatePosition" class="form-control" required>
+            </div>
+        </form>
+    </div>
+
+    <!-- Candidates Table -->
+    <div class="table-responsive mt-4">
+        <table class="table table-striped table-bordered" id="candidatesTable">
+            <thead>
+                <tr>
+                    <th>Select</th>
+                    <th>#</th>
+                    <th>Candidate Name</th>
+                    <th>Email</th>
+                    <th>Position</th>
+                    <th>Score</th>
+                    <th>Feedback</th>
+                    <th>CV</th>
+                </tr>
+            </thead>
+            <tbody id="candidatesTableBody">
+                <!-- Rows will be dynamically inserted here -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Send Invites Button -->
+    <div class="mt-4">
+        <button id="sendInvitesBtn" class="btn btn-primary">Send Invitations</button>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Fetch candidates data from the API and populate the table
+            axios.get('/api/candidates')
+                .then(response => {
+                    const candidates = response.data.candidates;
+                    const tableBody = $('#candidatesTableBody');
+
+                    if (candidates.length === 0) {
+                        tableBody.append('<tr><td colspan="8">No candidates found.</td></tr>');
+                    } else {
+                        candidates.forEach((candidate, index) => {
+                            const filePath = candidate.file_path.replace('static/', '');
+                            const row = `
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" name="selected_candidates" value="${candidate.email}">
+                                    </td>
+                                    <td>${index + 1}</td>
+                                    <td>${candidate.name}</td>
+                                    <td>${candidate.email}</td>
+                                    <td>${candidate.position}</td>
+                                    <td>${candidate.score}</td>
+                                    <td>${candidate.feedback}</td>
+                                    <td>
+                                        <a href="/static/${filePath}" download>
+                                            Download CV
+                                        </a>
+                                    </td>
+                                </tr>
+                            `;
+                            tableBody.append(row);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching candidates:", error);
+                    const tableBody = $('#candidatesTableBody');
+                    tableBody.append('<tr><td colspan="8">Error loading candidates.</td></tr>');
+                });
+
+            // Handle sending invitations
+            $('#sendInvitesBtn').click(function() {
+                var selectedEmails = [];
+                $('input[name="selected_candidates"]:checked').each(function() {
+                    selectedEmails.push($(this).val());
+                });
+    
+                if (selectedEmails.length === 0) {
+                    alert("No candidates selected!");
+                    return;
+                }
+
+                axios.get('/api/candidates')
+                    .then(response => {
+                        var candidates = response.data.candidates;
+                        var hrData = {
+                            name: $('#hrName').val(),
+                            designation: $('#hrDesignation').val(),
+                            email: $('#hrEmail').val(),
+                            password: $('#hrPassword').val(),
+                            emails: selectedEmails,
+                            names: [],
+                            candidatePosition: $('#candidatePosition').val()
+                        };
+
+                        candidates.forEach(candidate => {
+                            if (selectedEmails.includes(candidate.email)) {
+                                hrData.names.push(candidate.name);
+                            }
+                        });
+                        console.log((hrData))
+                        return axios.post('/interview_invite', hrData);
+                    })
+                    .then(response => {
+                        alert("Invitations sent successfully!");
+                    })
+                    .catch(error => {
+                        alert("Error sending invitations: " + error.message);
+                    });
+
+            });
+        });
+    </script>
+{% endblock %}

@@ -5,22 +5,21 @@ from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 from datetime import datetime
 
-
 # Define paths to your assets
-asset1 = "static/assets/Solutyics-logo.png"
-# asset2 = "assets/signature_sol.jpg"
+asset1 = "static/assets/your_company_logo.png"
+asset2 = "static/assets/your_company_signature.jpg"
 
 def send_interview_invitation(
-    dest_email, c_name, c_designation, sendermail, hr_name, hr_pos, server
+    dest_email, c_name, c_designation, sendermail, hr_name, hr_pos, company_name, server
 ):
     today = datetime.today()
 
-    SUBJECT = "Interview invitation | Solutyics"
+    SUBJECT = f"Interview Invitation | {company_name}"
     TEXT = f"""
     <p style="text-align: center; font-size: 20px;"><b>Dear {c_name},</b></p>
 
     <p style="font-size: 16px;">
-    We are pleased to invite you for an interview at Solutyics for the position of {c_designation}. The interview process will consist of two stages:</p>
+    We are pleased to invite you for an interview at {company_name} for the position of {c_designation}. The interview process will consist of two stages:</p>
 
     <p style="font-size: 16px;">
     <ol>
@@ -33,13 +32,13 @@ def send_interview_invitation(
 
     Please confirm your availability for the online interview by {today.strftime("%B %d, %Y")}. If you have any scheduling conflicts or need further information, please feel free to contact us.
 
-    We appreciate your interest in joining our team at Solutyics and look forward to meeting you soon.<br>
+    We appreciate your interest in joining our team at {company_name} and look forward to meeting you soon.<br>
 
     <b>Sincerely,</b><br><br>
 
     {hr_name}<br>
     {hr_pos}<br>
-    Solutyics<br><br>
+    {company_name}<br><br>
 
     <b>Accepted by:</b><br><br>
 
@@ -83,7 +82,7 @@ def send_interview_invitation(
         <body>
             <div class="outer">
                 <div class="inner">
-                    <a href="https://solutyics.com/"><img src="cid:company_logo" alt="Company Logo"></a>
+                    <a href="#"><img src="cid:company_logo" alt="Company Logo"></a>
                     {TEXT}
                     <a href="#"><img src="cid:signature" alt="Signature"></a>
                 </div>
@@ -94,14 +93,15 @@ def send_interview_invitation(
     html_part = MIMEText(html_content, "html")
     message.attach(html_part)
 
-    # with open(asset2, "rb") as f:
-    #     logo = MIMEImage(f.read())
-    #     logo.add_header("Content-ID", "<signature>")
-    #     message.attach(logo)
-
+    # Attach images
     with open(asset1, "rb") as f:
         logo = MIMEImage(f.read())
         logo.add_header("Content-ID", "<company_logo>")
         message.attach(logo)
+
+    with open(asset2, "rb") as f:
+        signature = MIMEImage(f.read())
+        signature.add_header("Content-ID", "<signature>")
+        message.attach(signature)
 
     return message

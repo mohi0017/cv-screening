@@ -11,11 +11,9 @@ from send_email import *
 import time
 import json
 
-# Initialize Firebase Admin SDK
-cred = credentials.Certificate("./cv-screening-baf20-firebase-adminsdk-riq4f-21594e1cdb.json")
-firebase_admin.initialize_app(cred,
-                              {"databaseURL": "https://cv-screening-baf20-default-rtdb.firebaseio.com/"}
-                              )
+# Initialize Firebase Admin SDK with the placeholder file
+cred = credentials.Certificate("./cv_screening_credentials_placeholder.json")
+firebase_admin.initialize_app(cred, {"databaseURL": "https://your-database-url.firebaseio.com/"})
 
 app = Flask(__name__)
 CORS(app)

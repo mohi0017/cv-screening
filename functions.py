@@ -14,7 +14,8 @@ import asyncio
 import json
 
 
-api_key = "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"
+# Placeholder for API key
+api_key = "your-api-key-placeholder"
 client = openai.AsyncOpenAI(api_key=api_key)
 
 

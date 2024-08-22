@@ -98,3 +98,4 @@ After processing the CVs, review the results and send interview invitations to c
 
 Contributing
 Contributions are welcome! Please open an issue or submit a pull request if you have suggestions or improvements.
+# cv-screening

@@ -25,8 +25,7 @@ Before you begin, ensure you have the following:
 
    Clone the repository to your local machine:
    ```bash
-   git clone https://github.com/yourusername/cv-screening.git
-   cd cv-screening
+   https://github.com/mohi0017/cv-screening.git
 
 
    Install Dependencies
